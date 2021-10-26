@@ -12,8 +12,6 @@ namespace eosiosystem {
 
 namespace eosio {
 
-   const name bridge_contract = "andybridge1"_n;
-
    using std::string;
 
    class [[eosio::contract("wraplock")]] token : public contract {
@@ -26,6 +24,7 @@ namespace eosio {
 
          struct [[eosio::table]] global {
             checksum256   chain_id;
+            name          bridge_contract;
             name          native_token_contract;
             checksum256   paired_chain_id;
             name          paired_wraptoken_contract;
@@ -82,7 +81,7 @@ namespace eosio {
 
 
          [[eosio::action]]
-         void init(const checksum256& chain_id, const name& native_token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract);
+         void init(const checksum256& chain_id, const name& bridge_contract, const name& native_token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract);
 
 
          [[eosio::action]]
@@ -126,14 +125,12 @@ namespace eosio {
 
          globaltable global_config;
 
-        proofstable _proofstable;
         processedtable _processedtable;
         reserves _reservestable;
 
         token( name receiver, name code, datastream<const char*> ds ) :
         contract(receiver, code, ds),
         global_config(_self, _self.value),
-        _proofstable(bridge_contract, bridge_contract.value),
         _processedtable(_self, _self.value),
         _reservestable(_self, _self.value)
         {
