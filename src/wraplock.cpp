@@ -31,13 +31,13 @@ void token::add_or_assert(const validproof& proof, const name& payer){
 
 }
 
-void token::init(const checksum256& chain_id, const name& token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract)
+void token::init(const checksum256& chain_id, const name& native_token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract)
 {
     require_auth( _self );
 
     auto global = global_config.get_or_create(_self, globalrow);
     global.chain_id = chain_id;
-    global.token_contract = token_contract;
+    global.native_token_contract = native_token_contract;
     global.paired_chain_id = paired_chain_id;
     global.paired_wraptoken_contract = paired_wraptoken_contract;
     global_config.set(global, _self);
@@ -141,7 +141,7 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
    check( is_account( owner ), "owner account does not exist" );
 
    auto global = global_config.get();
-   add_external_balance(owner, extended_asset(asset{0, symbol}, global.token_contract), ram_payer);
+   add_external_balance(owner, extended_asset(asset{0, symbol}, global.native_token_contract), ram_payer);
 
 }
 
@@ -158,9 +158,9 @@ void token::deposit(name from, name to, asset quantity, string memo)
     print("sender: ", get_sender(), "\n");
     
     auto global = global_config.get();
-    check(get_sender() == global.token_contract, "transfer not permitted from unauthorised token contract");
+    check(get_sender() == global.native_token_contract, "transfer not permitted from unauthorised token contract");
 
-    extended_asset xquantity = extended_asset(quantity, global.token_contract);
+    extended_asset xquantity = extended_asset(quantity, global.native_token_contract);
 
     //if incoming transfer
     if (from == "eosio.stake"_n) return ; //ignore unstaking transfers
