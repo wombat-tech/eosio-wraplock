@@ -31,30 +31,10 @@ namespace eosio {
             name          paired_wraptoken_contract;
          } globalrow;
 
-         struct [[eosio::table]] account {
-            asset    balance;
-
-            uint64_t primary_key()const { return balance.symbol.code().raw(); }
-         };
-
          struct [[eosio::table]] extaccount {
             extended_asset    balance;
 
             uint64_t primary_key()const { return balance.quantity.symbol.code().raw(); }
-         };
-
-         struct [[eosio::table]] currency_stats {
-
-            //uniquely identify source information
-            name          source_contract;
-            checksum256   source_chain_id;
-            symbol_code   source_symbol;
-
-            asset         supply;
-            asset         max_supply;
-            name          issuer;
-
-            uint64_t primary_key()const { return supply.symbol.code().raw(); }
          };
 
 
@@ -128,26 +108,9 @@ namespace eosio {
 
         [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
 
-         static asset get_supply( const name& token_contract_account, const symbol_code& sym_code )
-         {
-            stats statstable( token_contract_account, sym_code.raw() );
-            const auto& st = statstable.get( sym_code.raw() );
-            return st.supply;
-         }
-
-         static asset get_balance( const name& token_contract_account, const name& owner, const symbol_code& sym_code )
-         {
-            accounts accountstable( token_contract_account, owner.value );
-            const auto& ac = accountstable.get( sym_code.raw() );
-            return ac.balance;
-         }
-
 
          typedef eosio::multi_index< "extaccounts"_n, extaccount > extaccounts;
          typedef eosio::multi_index< "reserves"_n, extaccount > reserves;
-
-         typedef eosio::multi_index< "accounts"_n, account > accounts;
-         typedef eosio::multi_index< "stat"_n, currency_stats > stats;
 
          typedef eosio::multi_index< "proofs"_n, validproof,
             indexed_by<"digest"_n, const_mem_fun<validproof, checksum256, &validproof::by_digest>>> proofstable;

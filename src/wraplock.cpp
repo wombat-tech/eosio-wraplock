@@ -149,6 +149,12 @@ void token::close( const name& owner, const symbol& symbol )
 {
    require_auth( owner );
 
+   extaccounts acnts( get_self(), owner.value );
+   auto it = acnts.find( symbol.code().raw() );
+   check( it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
+   check( it->balance.quantity.amount == 0, "Cannot close because the balance is not zero." );
+   acnts.erase( it );
+
 }
 
 void token::deposit(name from, name to, asset quantity, string memo)
@@ -210,29 +216,7 @@ void token::clear()
 
   // if (global_config.exists()) global_config.remove();
 
-  accounts a_table( get_self(), "genesis11111"_n.value);
   extaccounts e_table( get_self(), "genesis11111"_n.value);
-
-  stats s1_table( get_self(), symbol_code("UTX").raw());
-  stats s2_table( get_self(), symbol_code("OOO").raw());
-
-  while (s1_table.begin() != s1_table.end()) {
-    auto itr = s1_table.end();
-    itr--;
-    s1_table.erase(itr);
-  }
-
-  while (s2_table.begin() != s2_table.end()) {
-    auto itr = s2_table.end();
-    itr--;
-    s2_table.erase(itr);
-  }
-
-  while (a_table.begin() != a_table.end()) {
-    auto itr = a_table.end();
-    itr--;
-    a_table.erase(itr);
-  }
 
   while (e_table.begin() != e_table.end()) {
     auto itr = e_table.end();
@@ -259,11 +243,8 @@ void token::clear()
   }
 
 /*
-accounts
-
 proofstable
 
-stats
 */
 }
 
