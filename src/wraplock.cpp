@@ -47,6 +47,8 @@ void token::init(const checksum256& chain_id, const name& native_token_contract,
 //locks a token amount in the reserve for an interchain transfer
 void token::lock(const name& owner,  const extended_asset& quantity, const name& beneficiary){
 
+  check(global_config.exists(), "contract must be initialized first");
+
   require_auth(owner);
 
   check(quantity.contract != _self, "cannot lock wrapped tokens");
@@ -72,6 +74,8 @@ void token::lock(const name& owner,  const extended_asset& quantity, const name&
 
 //emits an xfer receipt to serve as proof in interchain transfers
 void token::emitxfer(const token::xfer& xfer){
+
+ check(global_config.exists(), "contract must be initialized first");
  
  require_auth(_self);
 
@@ -136,6 +140,8 @@ void token::add_external_balance( const name& owner, const extended_asset& value
 
 void token::open( const name& owner, const symbol& symbol, const name& ram_payer )
 {
+   check(global_config.exists(), "contract must be initialized first");
+
    require_auth( ram_payer );
 
    check( is_account( owner ), "owner account does not exist" );
@@ -147,6 +153,8 @@ void token::open( const name& owner, const symbol& symbol, const name& ram_payer
 
 void token::close( const name& owner, const symbol& symbol )
 {
+   check(global_config.exists(), "contract must be initialized first");
+
    require_auth( owner );
 
    extaccounts acnts( get_self(), owner.value );
@@ -182,6 +190,8 @@ void token::deposit(name from, name to, asset quantity, string memo)
 //withdraw tokens (requires a proof of redemption)
 void token::withdraw(const name& caller, const uint64_t proof_id){
 
+    check(global_config.exists(), "contract must be initialized first");
+
     // todo - add ability to withdraw without proof_id, or move that into unlock
 
     require_auth( caller );
@@ -211,6 +221,7 @@ void token::withdraw(const name& caller, const uint64_t proof_id){
 
 void token::clear()
 { 
+  check(global_config.exists(), "contract must be initialized first");
 
   // todo - tidy this so all data is cleared (iterate over scopes)
 
