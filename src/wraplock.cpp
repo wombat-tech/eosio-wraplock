@@ -57,6 +57,7 @@ void token::lock(const name& owner,  const extended_asset& quantity, const name&
 
   check(quantity.contract != _self, "cannot lock wrapped tokens");
 
+  check(quantity.quantity.amount > 0, "must lock positive quantity");
 
   sub_external_balance( owner, quantity );
   add_reserve( quantity );
@@ -195,8 +196,6 @@ void token::deposit(name from, name to, asset quantity, string memo)
 void token::withdraw(const name& caller, const uint64_t proof_id){
 
     check(global_config.exists(), "contract must be initialized first");
-
-    // todo - add ability to withdraw without proof_id, or move that into unlock
 
     require_auth( caller );
 
