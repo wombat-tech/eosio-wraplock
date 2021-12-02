@@ -88,7 +88,7 @@ namespace eosio {
          void lock(const name& owner,  const extended_asset& quantity, const name& beneficiary);
 
          [[eosio::action]]
-         void withdraw(const name& caller, const uint64_t proof_id);
+         void withdraw(const name& caller, const checksum256 action_receipt_digest);
       
 
          [[eosio::action]]
@@ -121,7 +121,7 @@ namespace eosio {
 
          void add_or_assert(const validproof& proof, const name& prover);
 
-         validproof get_proof(const uint64_t proof_id);
+         validproof get_proof(const checksum256 action_receipt_digest);
 
          globaltable global_config;
 
