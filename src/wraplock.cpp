@@ -137,9 +137,11 @@ void token::add_external_balance( const name& owner, const extended_asset& value
         a.balance = value;
       });
    } else {
-      to_acnts.modify( to, same_payer, [&]( auto& a ) {
-        a.balance += value;
-      });
+      if (value.quantity.amount > 0) { // prevent modification in repreated opens
+          to_acnts.modify( to, same_payer, [&]( auto& a ) {
+            a.balance += value;
+          });
+      }
    }
 
 }
