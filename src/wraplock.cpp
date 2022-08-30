@@ -103,12 +103,8 @@ void wraplock::deposit(name from, name to, asset quantity, string memo)
         .beneficiary = name(memo)
       };
 
-      action act(
-        permission_level{_self, "active"_n},
-        _self, "emitxfer"_n,
-        std::make_tuple(x)
-      );
-      act.send();
+      wraplock::emitxfer_action act(_self, permission_level{_self, "active"_n});
+      act.send(x);
 
     }
 
@@ -127,12 +123,8 @@ void wraplock::_withdraw(const name& prover, const bridge::actionproof actionpro
 
     sub_reserve(redeem_act.quantity.quantity);
 
-    action act(
-      permission_level{_self, "active"_n},
-      redeem_act.quantity.contract, "transfer"_n,
-      std::make_tuple(_self, redeem_act.beneficiary, redeem_act.quantity.quantity, ""_n )
-    );
-    act.send();
+    wraplock::transfer_action act(redeem_act.quantity.contract, permission_level{_self, "active"_n});
+    act.send(_self, redeem_act.beneficiary, redeem_act.quantity.quantity, std::string("") );
 
 }
 
@@ -147,12 +139,8 @@ void wraplock::withdrawa(const name& prover, const bridge::heavyproof blockproof
 
     // check proof against bridge
     // will fail tx if prove is invalid
-    action checkproof_act(
-      permission_level{_self, "active"_n},
-      global.bridge_contract, "checkproofb"_n,
-      std::make_tuple(blockproof, actionproof)
-    );
-    checkproof_act.send();
+    wraplock::heavyproof_action checkproof_act(global.bridge_contract, permission_level{_self, "active"_n});
+    checkproof_act.send(blockproof, actionproof);
 
     _withdraw(prover, actionproof);
 }
@@ -168,12 +156,8 @@ void wraplock::withdrawb(const name& prover, const bridge::lightproof blockproof
 
     // check proof against bridge
     // will fail tx if prove is invalid
-    action checkproof_act(
-      permission_level{_self, "active"_n},
-      global.bridge_contract, "checkproofc"_n,
-      std::make_tuple(blockproof, actionproof)
-    );
-    checkproof_act.send();
+    wraplock::lightproof_action checkproof_act(global.bridge_contract, permission_level{_self, "active"_n});
+    checkproof_act.send(blockproof, actionproof);
 
     _withdraw(prover, actionproof);
 }

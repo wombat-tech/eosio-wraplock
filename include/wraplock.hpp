@@ -7,6 +7,7 @@
 #include <string>
 
 #include <bridge.hpp>
+#include <eosio.token.hpp>
 
 namespace eosiosystem {
    class system_contract;
@@ -123,6 +124,10 @@ namespace eosio {
           */
          [[eosio::on_notify("*::transfer")]] void deposit(name from, name to, asset quantity, string memo);
 
+         using transfer_action = action_wrapper<"transfer"_n, &token::transfer>;
+         using heavyproof_action = action_wrapper<"checkproofb"_n, &bridge::checkproofb>;
+         using lightproof_action = action_wrapper<"checkproofc"_n, &bridge::checkproofc>;
+         using emitxfer_action = action_wrapper<"emitxfer"_n, &wraplock::emitxfer>;
 
          typedef eosio::multi_index< "reserves"_n, account > reserves;
       
