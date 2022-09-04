@@ -24,19 +24,35 @@ void wraplock::add_or_assert(const bridge::actionproof& actionproof, const name&
 
 }
 
-void wraplock::init(const checksum256& chain_id, const name& bridge_contract, const name& native_token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract)
+void wraplock::init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id)
 {
     require_auth( _self );
 
     auto global = global_config.get_or_create(_self, globalrow);
     global.chain_id = chain_id;
     global.bridge_contract = bridge_contract;
-    global.native_token_contract = native_token_contract;
     global.paired_chain_id = paired_chain_id;
-    global.paired_wraptoken_contract = paired_wraptoken_contract;
     global_config.set(global, _self);
 
 }
+
+void wraplock::addcontract(const name& native_token_contract, const name& paired_wraptoken_contract)
+{
+    require_auth( _self );
+
+    auto res = _contractmappingtable.find( native_token_contract.value );
+    check( res == _contractmappingtable.end(), "contract already registered");
+
+    _contractmappingtable.emplace( _self, [&]( auto& c ){
+        c.native_token_contract = native_token_contract;
+        c.paired_wraptoken_contract = paired_wraptoken_contract;
+    });
+}
+
+// void wraplock::delcontract(const name& native_token_contract)
+// {
+//     require_auth( _self );
+// }
 
 //emits an xfer receipt to serve as proof in interchain transfers
 void wraplock::emitxfer(const wraplock::xfer& xfer){
@@ -47,26 +63,28 @@ void wraplock::emitxfer(const wraplock::xfer& xfer){
 
 }
 
-void wraplock::sub_reserve( const asset& value ){
+void wraplock::sub_reserve( const extended_asset& value ){
 
-   const auto& res = _reservestable.get( value.symbol.code().raw(), "no balance object found" );
-   check( res.balance.amount >= value.amount, "overdrawn balance" );
+   reserves _reservestable( _self, value.contract.value );
+   const auto& res = _reservestable.get( value.quantity.symbol.code().raw(), "no balance object found" );
+   check( res.balance.amount >= value.quantity.amount, "overdrawn balance" );
 
    _reservestable.modify( res, _self, [&]( auto& a ) {
-         a.balance -= value;
+         a.balance -= value.quantity;
       });
 }
 
-void wraplock::add_reserve(const asset& value){
+void wraplock::add_reserve(const extended_asset& value){
 
-   auto res = _reservestable.find( value.symbol.code().raw() );
+   reserves _reservestable( _self, value.contract.value );
+   auto res = _reservestable.find(  value.quantity.symbol.code().raw() );
    if( res == _reservestable.end() ) {
       _reservestable.emplace( _self, [&]( auto& a ){
-        a.balance = value;
+        a.balance = value.quantity;
       });
    } else {
       _reservestable.modify( res, _self, [&]( auto& a ) {
-        a.balance += value;
+        a.balance += value.quantity;
       });
    }
 
@@ -81,7 +99,9 @@ void wraplock::deposit(name from, name to, asset quantity, string memo)
     
     check(global_config.exists(), "contract must be initialized first");
     auto global = global_config.get();
-    check(get_sender() == global.native_token_contract, "transfer not permitted from unauthorised token contract");
+
+    auto contractmap = _contractmappingtable.find( get_sender().value );
+    check(contractmap != _contractmappingtable.end(), "transfer not permitted from unauthorised token contract");
 
     //if incoming transfer
     if (from == "eosio.stake"_n) return ; //ignore unstaking transfers
@@ -93,13 +113,13 @@ void wraplock::deposit(name from, name to, asset quantity, string memo)
 
       check(quantity.amount > 0, "must lock positive quantity");
 
-      add_reserve( quantity );
+      add_reserve( extended_asset{quantity, get_sender()} );
 
       auto global = global_config.get();
 
       wraplock::xfer x = {
         .owner = from,
-        .quantity = extended_asset(quantity, global.native_token_contract),
+        .quantity = extended_asset(quantity, get_sender()),
         .beneficiary = name(memo)
       };
 
@@ -113,15 +133,17 @@ void wraplock::deposit(name from, name to, asset quantity, string memo)
 void wraplock::_withdraw(const name& prover, const bridge::actionproof actionproof){
     auto global = global_config.get();
 
-    wraplock::xfer redeem_act = unpack<wraplock::xfer>(actionproof.action.data);
+    auto contractmap_index = _contractmappingtable.get_index<"wraptoken"_n>();
+    auto contractmap = contractmap_index.find( actionproof.action.account.value );
+    check(contractmap != contractmap_index.end(), "proof account does not match paired account");
 
-    check(actionproof.action.account == global.paired_wraptoken_contract, "proof account does not match paired account");
+    wraplock::xfer redeem_act = unpack<wraplock::xfer>(actionproof.action.data);
 
     add_or_assert(actionproof, prover);
 
     check(actionproof.action.name == "emitxfer"_n, "must provide proof of token retiring before withdrawing");
 
-    sub_reserve(redeem_act.quantity.quantity);
+    sub_reserve( extended_asset{redeem_act.quantity.quantity, redeem_act.quantity.contract} );
 
     wraplock::transfer_action act(redeem_act.quantity.contract, permission_level{_self, "active"_n});
     act.send(_self, redeem_act.beneficiary, redeem_act.quantity.quantity, std::string("") );
@@ -170,10 +192,16 @@ void wraplock::clear()
 
   // if (global_config.exists()) global_config.remove();
 
-  while (_reservestable.begin() != _reservestable.end()) {
-    auto itr = _reservestable.end();
-    itr--;
-    _reservestable.erase(itr);
+  auto contractrow = _contractmappingtable.end();
+  while ( _contractmappingtable.begin() != _contractmappingtable.end() ) {
+      contractrow--;
+      reserves _reservestable( _self, contractrow->native_token_contract.value );
+      while (_reservestable.begin() != _reservestable.end()) {
+        auto itr = _reservestable.end();
+        itr--;
+        _reservestable.erase(itr);
+      }
+      _contractmappingtable.erase(contractrow);
   }
 
   while (_processedtable.begin() != _processedtable.end()) {

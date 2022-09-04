@@ -20,26 +20,29 @@ namespace eosio {
    class [[eosio::contract("wraplock")]] wraplock : public contract {
       private:
 
-         struct st_create {
-            name          issuer;
-            asset         maximum_supply;
-         };
-
-
          // structure used for globals - see `init` action for documentation
          struct [[eosio::table]] global {
             checksum256   chain_id;
             name          bridge_contract;
-            name          native_token_contract;
+            // name          native_token_contract;
             checksum256   paired_chain_id;
-            name          paired_wraptoken_contract;
+            // name          paired_wraptoken_contract;
          } globalrow;
 
-         // structure used for reserve account balances
+         // structure used for reserve account balances, scoped by token contract
          struct [[eosio::table]] account {
             asset    balance;
 
             uint64_t primary_key()const { return balance.symbol.code().raw(); }
+         };
+
+         // structure used for mapping between native token contracts and wrapped token contracts
+         struct [[eosio::table]] contract_mapping {
+            name    native_token_contract;
+            name    paired_wraptoken_contract;
+
+            uint64_t primary_key()const { return native_token_contract.value; }
+            uint64_t by_paired_wraptoken_contract()const { return paired_wraptoken_contract.value; }
          };
 
          // structure used for retaining action receipt digests of accepted proven actions, to prevent replay attacks
@@ -53,8 +56,8 @@ namespace eosio {
 
          };
 
-         void sub_reserve(const asset& value );
-         void add_reserve(const asset& value );
+         void sub_reserve(const extended_asset& value );
+         void add_reserve(const extended_asset& value );
          void add_or_assert(const bridge::actionproof& actionproof, const name& payer);
          void _withdraw(const name& prover, const bridge::actionproof actionproof);
 
@@ -69,16 +72,31 @@ namespace eosio {
          };
 
          /**
-          * Allows contract account to set which chains and associated contracts are used for all interchain transfers.
+          * Allows contract account to set which chains and associated bridge contracts are used for interchain transfers.
           *
           * @param chain_id - the id of the chain running this contract
           * @param bridge_contract - the bridge contract on this chain
-          * @param native_token_contract - the token contract on this chain being enabled for interchain transfers
           * @param paired_chain_id - the id of the chain hosting the wrapped tokens
-          * @param paired_wraptoken_contract - the wraptoken contract on the wrapped token chain
           */
          [[eosio::action]]
-         void init(const checksum256& chain_id, const name& bridge_contract, const name& native_token_contract, const checksum256& paired_chain_id, const name& paired_wraptoken_contract);
+         void init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id);
+
+         /**
+          * Allows contract account to add support for an asset contract for interchain transfers.
+          *
+          * @param native_token_contract - the token contract being enabled for interchain transfers
+          * @param paired_wraptoken_contract - the corresponding wraptoken contract which transfers are sent to/from
+          */
+         [[eosio::action]]
+         void addcontract(const name& native_token_contract, const name& paired_wraptoken_contract);
+
+         /**
+          * Allows contract account to disable support for an asset contract for interchain transfers.
+          *
+          * @param native_token_contract - the token contract being disabled for interchain transfers
+          */
+         // [[eosio::action]]
+         // void delcontract(const name& native_token_contract);
 
          /**
           * Allows `prover` account to redeem native tokens and send them to the beneficiary indentified in the `actionproof`.
@@ -130,6 +148,8 @@ namespace eosio {
          using emitxfer_action = action_wrapper<"emitxfer"_n, &wraplock::emitxfer>;
 
          typedef eosio::multi_index< "reserves"_n, account > reserves;
+         typedef eosio::multi_index< "contractmap"_n, contract_mapping,
+            indexed_by<"wraptoken"_n, const_mem_fun<contract_mapping, uint64_t, &contract_mapping::by_paired_wraptoken_contract>> > contractmapping;
       
          typedef eosio::multi_index< "processed"_n, processed,
             indexed_by<"digest"_n, const_mem_fun<processed, checksum256, &processed::by_digest>>> processedtable;
@@ -139,13 +159,13 @@ namespace eosio {
          globaltable global_config;
 
          processedtable _processedtable;
-         reserves _reservestable;
+         contractmapping _contractmappingtable;
 
          wraplock( name receiver, name code, datastream<const char*> ds ) :
          contract(receiver, code, ds),
          global_config(_self, _self.value),
          _processedtable(_self, _self.value),
-         _reservestable(_self, _self.value)
+         _contractmappingtable(_self, _self.value)
          {
 
          }
