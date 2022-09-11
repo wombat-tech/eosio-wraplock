@@ -40,8 +40,8 @@ void wraplock::addcontract(const name& native_token_contract, const name& paired
 {
     require_auth( _self );
 
-    auto res = _contractmappingtable.find( native_token_contract.value );
-    check( res == _contractmappingtable.end(), "contract already registered");
+    auto itr = _contractmappingtable.find( native_token_contract.value );
+    check( itr == _contractmappingtable.end(), "contract already registered");
 
     _contractmappingtable.emplace( _self, [&]( auto& c ){
         c.native_token_contract = native_token_contract;
@@ -52,6 +52,11 @@ void wraplock::addcontract(const name& native_token_contract, const name& paired
 // void wraplock::delcontract(const name& native_token_contract)
 // {
 //     require_auth( _self );
+
+//     auto itr = _contractmappingtable.find( native_token_contract.value );
+//     check( itr != _contractmappingtable.end(), "contract not registered");
+
+//     _contractmappingtable.erase(itr);
 // }
 
 //emits an xfer receipt to serve as proof in interchain transfers
