@@ -24,9 +24,7 @@ namespace eosio {
          struct [[eosio::table]] global {
             checksum256   chain_id;
             name          bridge_contract;
-            // name          native_token_contract;
             checksum256   paired_chain_id;
-            // name          paired_wraptoken_contract;
          } globalrow;
 
          // structure used for reserve account balances, scoped by token contract
