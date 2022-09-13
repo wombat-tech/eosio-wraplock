@@ -166,8 +166,11 @@ void wraplock::withdrawa(const name& prover, const bridge::heavyproof blockproof
 
     // check proof against bridge
     // will fail tx if prove is invalid
+    auto p = _heavy_proof.get_or_create(_self, _heavy_proof_obj);
+    p.hp = blockproof;
+    _heavy_proof.set(p, _self);
     wraplock::heavyproof_action checkproof_act(global.bridge_contract, permission_level{_self, "active"_n});
-    checkproof_act.send(blockproof, actionproof);
+    checkproof_act.send(_self, actionproof);
 
     _withdraw(prover, actionproof);
 }
@@ -183,8 +186,11 @@ void wraplock::withdrawb(const name& prover, const bridge::lightproof blockproof
 
     // check proof against bridge
     // will fail tx if prove is invalid
+    auto p = _light_proof.get_or_create(_self, _light_proof_obj);
+    p.lp = blockproof;
+    _light_proof.set(p, _self);
     wraplock::lightproof_action checkproof_act(global.bridge_contract, permission_level{_self, "active"_n});
-    checkproof_act.send(blockproof, actionproof);
+    checkproof_act.send(_self, actionproof);
 
     _withdraw(prover, actionproof);
 }
