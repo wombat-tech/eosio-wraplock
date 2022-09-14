@@ -38,6 +38,8 @@ void wraplock::init(const checksum256& chain_id, const name& bridge_contract, co
 
 void wraplock::addcontract(const name& native_token_contract, const name& paired_wraptoken_contract)
 {
+    check(global_config.exists(), "contract must be initialized first");
+
     require_auth( _self );
 
     auto itr = _contractmappingtable.find( native_token_contract.value );
@@ -49,15 +51,17 @@ void wraplock::addcontract(const name& native_token_contract, const name& paired
     });
 }
 
-// void wraplock::delcontract(const name& native_token_contract)
-// {
-//     require_auth( _self );
+void wraplock::delcontract(const name& native_token_contract)
+{
+    check(global_config.exists(), "contract must be initialized first");
 
-//     auto itr = _contractmappingtable.find( native_token_contract.value );
-//     check( itr != _contractmappingtable.end(), "contract not registered");
+    require_auth( _self );
 
-//     _contractmappingtable.erase(itr);
-// }
+    auto itr = _contractmappingtable.find( native_token_contract.value );
+    check( itr != _contractmappingtable.end(), "contract not registered");
+
+    _contractmappingtable.erase(itr);
+}
 
 //emits an xfer receipt to serve as proof in interchain transfers
 void wraplock::emitxfer(const wraplock::xfer& xfer){

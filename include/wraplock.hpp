@@ -125,8 +125,8 @@ namespace eosio {
           *
           * @param native_token_contract - the token contract being disabled for interchain transfers
           */
-         // [[eosio::action]]
-         // void delcontract(const name& native_token_contract);
+         [[eosio::action]]
+         void delcontract(const name& native_token_contract);
 
          /**
           * Allows `prover` account to redeem native tokens and send them to the beneficiary indentified in the `actionproof`.
