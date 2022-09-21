@@ -90,6 +90,7 @@ namespace eosio {
          void add_reserve(const extended_asset& value );
          void add_or_assert(const bridge::actionproof& actionproof, const name& payer);
          void _withdraw(const name& prover, const bridge::actionproof actionproof);
+         void _cancel(const name& prover, const bridge::actionproof actionproof);
 
       public:
          using contract::contract;
@@ -148,6 +149,26 @@ namespace eosio {
          [[eosio::action]]
          void withdrawb(const name& prover, const bridge::lightproof blockproof, const bridge::actionproof actionproof);
       
+         /**
+          * Allows `prover` account to cancel a token transfer and return them to the beneficiary indentified in the `actionproof`.
+          *
+          * @param prover - the calling account whose ram is used for storing the action receipt digest to prevent replay attacks
+          * @param blockproof - the heavy proof data structure
+          * @param actionproof - the proof structure for the `emitxfer` action associated with the retiring transfer action on the native chain
+          */
+         [[eosio::action]]
+         void cancela(const name& prover, const bridge::heavyproof blockproof, const bridge::actionproof actionproof);
+
+         /**
+          * Allows `prover` account to cancel a token transfer and return them to the beneficiary indentified in the `actionproof`.
+          *
+          * @param prover - the calling account whose ram is used for storing the action receipt digest to prevent replay attacks
+          * @param blockproof - the light proof data structure
+          * @param actionproof - the proof structure for the `emitxfer` action associated with the retiring transfer action on the native chain
+          */
+         [[eosio::action]]
+         void cancelb(const name& prover, const bridge::lightproof blockproof, const bridge::actionproof actionproof);
+
          /**
           * The inline action created by this contract when tokens are locked. Proof of this action is used on the wrapped token chain.
           */

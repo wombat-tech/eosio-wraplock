@@ -199,6 +199,80 @@ void wraplock::withdrawb(const name& prover, const bridge::lightproof blockproof
     _withdraw(prover, actionproof);
 }
 
+void wraplock::_cancel(const name& prover, const bridge::actionproof actionproof)
+{
+    auto global = global_config.get();
+
+    auto contractmap_index = _contractmappingtable.get_index<"wraptoken"_n>();
+    auto contractmap = contractmap_index.find( actionproof.action.account.value );
+    check(contractmap != contractmap_index.end(), "proof account does not match paired account");
+
+    wraplock::xfer redeem_act = unpack<wraplock::xfer>(actionproof.action.data);
+
+    add_or_assert(actionproof, prover);
+
+    auto sym = redeem_act.quantity.quantity.symbol;
+    check( sym.is_valid(), "invalid symbol name" );
+
+    check(actionproof.action.name == "emitxfer"_n, "must provide proof of token retiring before cancelling");
+
+    wraplock::xfer x = {
+      .owner = _self, // todo - check whether this should show as redeem_act.beneficiary
+      .quantity = extended_asset(redeem_act.quantity.quantity, redeem_act.quantity.contract),
+      .beneficiary = redeem_act.owner
+    };
+
+    // return to redeem_act.owner so can be withdrawn from wraplock
+    wraplock::emitxfer_action act(_self, permission_level{_self, "active"_n});
+    act.send(x);
+
+}
+
+void wraplock::cancela(const name& prover, const bridge::heavyproof blockproof, const bridge::actionproof actionproof)
+{
+    require_auth(prover);
+
+    check(global_config.exists(), "contract must be initialized first");
+    auto global = global_config.get();
+
+    check(blockproof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
+
+    check(current_time_point().sec_since_epoch() > blockproof.blocktoprove.block.header.timestamp.to_time_point().sec_since_epoch() + 900, "must wait 15 minutes to cancel");
+
+    // check proof against bridge
+    // will fail tx if prove is invalid
+    auto p = _heavy_proof.get_or_create(_self, _heavy_proof_obj);
+    p.hp = blockproof;
+    _heavy_proof.set(p, _self);
+    wraplock::heavyproof_action checkproof_act(global.bridge_contract, permission_level{_self, "active"_n});
+    checkproof_act.send(_self, actionproof);
+
+    _cancel(prover, actionproof);
+}
+
+void wraplock::cancelb(const name& prover, const bridge::lightproof blockproof, const bridge::actionproof actionproof)
+{
+    require_auth(prover);
+
+    check(global_config.exists(), "contract must be initialized first");
+    auto global = global_config.get();
+
+    check(blockproof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
+
+    check(current_time_point().sec_since_epoch() > blockproof.header.timestamp.to_time_point().sec_since_epoch() + 900, "must wait 15 minutes to cancel");
+
+    // check proof against bridge
+    // will fail tx if prove is invalid
+    auto p = _light_proof.get_or_create(_self, _light_proof_obj);
+    p.lp = blockproof;
+    _light_proof.set(p, _self);
+    wraplock::lightproof_action checkproof_act(global.bridge_contract, permission_level{_self, "active"_n});
+    checkproof_act.send(_self, actionproof);
+
+    _cancel(prover, actionproof);
+}
+
+
 void wraplock::clear()
 { 
   require_auth( _self );
