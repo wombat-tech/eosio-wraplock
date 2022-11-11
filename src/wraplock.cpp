@@ -26,6 +26,8 @@ void wraplock::add_or_assert(const bridge::actionproof& actionproof, const name&
 
 void wraplock::init(const checksum256& chain_id, const name& bridge_contract, const checksum256& paired_chain_id)
 {
+    check(!global_config.exists(), "contract already initialized");
+
     require_auth( _self );
 
     auto global = global_config.get_or_create(_self, globalrow);
@@ -316,7 +318,7 @@ void wraplock::cancelb(const name& prover, const bridge::lightproof blockproof, 
 
   check(global_config.exists(), "contract must be initialized first");
 
-  // if (global_config.exists()) global_config.remove();
+  if (global_config.exists()) global_config.remove();
 
   auto contractrow = _contractmappingtable.end();
   while ( _contractmappingtable.begin() != _contractmappingtable.end() ) {
