@@ -57,6 +57,7 @@ namespace eosio {
             checksum256   chain_id;
             name          bridge_contract;
             checksum256   paired_chain_id;
+            bool          enabled;
          } globalrow;
 
          // structure used for reserve account balances, scoped by token contract
@@ -176,10 +177,22 @@ namespace eosio {
          void emitxfer(const wraplock::xfer& xfer);
 
          /**
-          * Allows contract account to clear existing state except which chains and associated contracts are used.
+          * Disable all user actions on the contract.
           */
          [[eosio::action]]
-         void clear();
+         void disable();
+
+         /**
+          * Enable all user actions on the contract.
+          */
+         [[eosio::action]]
+         void enable();
+         
+         /**
+          * Allows contract account to clear existing state except which chains and associated contracts are used.
+          */
+         //[[eosio::action]]
+         //void clear();
 
          /**
           * On transfer notification, calls the deposit function which locks the `quantity` of tokens sent in the reserve and calls

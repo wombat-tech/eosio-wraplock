@@ -32,6 +32,7 @@ void wraplock::init(const checksum256& chain_id, const name& bridge_contract, co
     global.chain_id = chain_id;
     global.bridge_contract = bridge_contract;
     global.paired_chain_id = paired_chain_id;
+    global.enabled = true;
     global_config.set(global, _self);
 
 }
@@ -66,9 +67,35 @@ void wraplock::delcontract(const name& native_token_contract)
 //emits an xfer receipt to serve as proof in interchain transfers
 void wraplock::emitxfer(const wraplock::xfer& xfer){
 
- check(global_config.exists(), "contract must be initialized first");
+    check(global_config.exists(), "contract must be initialized first");
  
- require_auth(_self);
+    require_auth(_self);
+
+}
+
+//Disable all user actions on the contract.
+void wraplock::disable(){
+
+    check(global_config.exists(), "contract must be initialized first");
+ 
+    require_auth(_self);
+
+    auto global = global_config.get();
+    global.enabled = false;
+    global_config.set(global, _self);
+
+}
+
+//Enable all user actions on the contract.
+void wraplock::enable(){
+
+    check(global_config.exists(), "contract must be initialized first");
+ 
+    require_auth(_self);
+
+    auto global = global_config.get();
+    global.enabled = true;
+    global_config.set(global, _self);
 
 }
 
@@ -108,6 +135,8 @@ void wraplock::deposit(name from, name to, asset quantity, string memo)
     
     check(global_config.exists(), "contract must be initialized first");
     auto global = global_config.get();
+
+    check(global.enabled == true, "contract has been disabled");
 
     auto contractmap = _contractmappingtable.find( get_sender().value );
     check(contractmap != _contractmappingtable.end(), "transfer not permitted from unauthorised token contract");
@@ -166,6 +195,8 @@ void wraplock::withdrawa(const name& prover, const bridge::heavyproof blockproof
     check(global_config.exists(), "contract must be initialized first");
     auto global = global_config.get();
 
+    check(global.enabled == true, "contract has been disabled");
+
     check(blockproof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
 
     // check proof against bridge
@@ -185,6 +216,8 @@ void wraplock::withdrawb(const name& prover, const bridge::lightproof blockproof
 
     check(global_config.exists(), "contract must be initialized first");
     auto global = global_config.get();
+
+    check(global.enabled == true, "contract has been disabled");
 
     check(blockproof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
 
@@ -235,6 +268,8 @@ void wraplock::cancela(const name& prover, const bridge::heavyproof blockproof, 
     check(global_config.exists(), "contract must be initialized first");
     auto global = global_config.get();
 
+    check(global.enabled == true, "contract has been disabled");
+
     check(blockproof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
 
     check(current_time_point().sec_since_epoch() > blockproof.blocktoprove.block.header.timestamp.to_time_point().sec_since_epoch() + 900, "must wait 15 minutes to cancel");
@@ -257,6 +292,8 @@ void wraplock::cancelb(const name& prover, const bridge::lightproof blockproof, 
     check(global_config.exists(), "contract must be initialized first");
     auto global = global_config.get();
 
+    check(global.enabled == true, "contract has been disabled");
+
     check(blockproof.chain_id == global.paired_chain_id, "proof chain does not match paired chain");
 
     check(current_time_point().sec_since_epoch() > blockproof.header.timestamp.to_time_point().sec_since_epoch() + 900, "must wait 15 minutes to cancel");
@@ -273,7 +310,7 @@ void wraplock::cancelb(const name& prover, const bridge::lightproof blockproof, 
 }
 
 
-void wraplock::clear()
+/*void wraplock::clear()
 { 
   require_auth( _self );
 
@@ -299,7 +336,7 @@ void wraplock::clear()
     _processedtable.erase(itr);
   }
 
-}
+}*/
 
 } /// namespace eosio
 
