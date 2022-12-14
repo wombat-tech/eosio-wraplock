@@ -30,6 +30,8 @@ void wraplock::init(const checksum256& chain_id, const name& bridge_contract, co
 
     require_auth( _self );
 
+    check( is_account( bridge_contract ), "bridge_contract account does not exist" );
+
     auto global = global_config.get_or_create(_self, globalrow);
     global.chain_id = chain_id;
     global.bridge_contract = bridge_contract;
@@ -45,6 +47,8 @@ void wraplock::addcontract(const name& native_token_contract, const name& paired
 
     require_auth( _self );
 
+    check( is_account( native_token_contract ), "native_token_contract account does not exist" );
+
     auto itr = _contractmappingtable.find( native_token_contract.value );
     check( itr == _contractmappingtable.end(), "contract already registered");
 
@@ -59,6 +63,8 @@ void wraplock::delcontract(const name& native_token_contract)
     check(global_config.exists(), "contract must be initialized first");
 
     require_auth( _self );
+
+    check( is_account( native_token_contract ), "native_token_contract account does not exist" );
 
     auto itr = _contractmappingtable.find( native_token_contract.value );
     check( itr != _contractmappingtable.end(), "contract not registered");
@@ -154,8 +160,6 @@ void wraplock::deposit(name from, name to, asset quantity, string memo)
       check(quantity.amount > 0, "must lock positive quantity");
 
       add_reserve( extended_asset{quantity, get_sender()} );
-
-      auto global = global_config.get();
 
       wraplock::xfer x = {
         .owner = from,
