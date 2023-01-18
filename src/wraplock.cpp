@@ -316,7 +316,7 @@ void wraplock::cancelb(const name& prover, const bridge::lightproof blockproof, 
 }
 
 
-void wraplock::clear()
+/*void wraplock::clear()
 { 
   require_auth( _self );
 
@@ -343,7 +343,7 @@ void wraplock::clear()
   if (_light_proof.exists()) _light_proof.remove();
   if (_heavy_proof.exists()) _heavy_proof.remove();
 
-}/**/
+}*/
 
 } /// namespace eosio
 

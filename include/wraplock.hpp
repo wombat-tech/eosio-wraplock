@@ -191,8 +191,8 @@ namespace eosio {
          /**
           * Allows contract account to clear existing state except which chains and associated contracts are used.
           */
-         [[eosio::action]]
-         void clear();
+         //[[eosio::action]]
+         //void clear();
 
          /**
           * On transfer notification, calls the deposit function which locks the `quantity` of tokens sent in the reserve and calls
