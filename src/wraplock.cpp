@@ -36,7 +36,7 @@ void wraplock::init(const checksum256& chain_id, const name& bridge_contract, co
     global.chain_id = chain_id;
     global.bridge_contract = bridge_contract;
     global.paired_chain_id = paired_chain_id;
-    global.enabled = true;
+    global.enabled = false;
     global_config.set(global, _self);
 
 }
@@ -316,11 +316,9 @@ void wraplock::cancelb(const name& prover, const bridge::lightproof blockproof, 
 }
 
 
-/*void wraplock::clear()
+void wraplock::clear()
 { 
   require_auth( _self );
-
-  check(global_config.exists(), "contract must be initialized first");
 
   if (global_config.exists()) global_config.remove();
 
@@ -342,7 +340,10 @@ void wraplock::cancelb(const name& prover, const bridge::lightproof blockproof, 
     _processedtable.erase(itr);
   }
 
-}*/
+  if (_light_proof.exists()) _light_proof.remove();
+  if (_heavy_proof.exists()) _heavy_proof.remove();
+
+}/**/
 
 } /// namespace eosio
 
