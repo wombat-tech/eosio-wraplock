@@ -1,9 +1,7 @@
 --- wraplock Project ---
 
  - How to Build -
-   - cd to 'build' directory
-   - run the command 'cmake ..'
-   - run the command 'make'
+   - run compile.sh
 
  - After build -
    - The built smart contract is under the 'wraplock' directory in the 'build' directory
